@@ -1,0 +1,14 @@
+LTspice 24.1.5 for Windows
+Circuit: C:\Users\mgvir\OneDrive\Documentos\ITBA\2025\TC1\TPF\SpiceThings\InterruptorSeCierra.net
+Start Time: Mon Jun  2 15:12:11 2025
+solver = Normal
+Maximum thread count: 12
+tnom = 27
+temp = 27
+method = trap
+Direct Newton iteration for .op point succeeded.
+Total elapsed time: 6.182 seconds.
+
+Files loaded:
+C:\Users\mgvir\OneDrive\Documentos\ITBA\2025\TC1\TPF\SpiceThings\InterruptorSeCierra.net
+
