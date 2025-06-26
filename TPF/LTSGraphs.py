@@ -4,69 +4,84 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 #LTSPICE FILE
-ltspicePath1 = "./LTSpice_raw/Simulacion3Bode.raw"
-ltspicePathCon = "C:/Users/mgvir/OneDrive/Documentos/ITBA/2025/TC1/TP4/Simulacion5ConRL.raw"
-ltspicePathSin = "C:/Users/mgvir/OneDrive/Documentos/ITBA/2025/TC1/TP4/Simulacion5SinRL.raw"
+ltspicePath1 = "C:/Users/mgvir/OneDrive/Documentos/ITBA/2025/TC1/TPF/LTSpice_raw/PCB/SegundoOrden.raw"
 
 l1 = lts.Ltspice(ltspicePath1)
 l1.parse()
 
 frecuency = l1.get_frequency()
-V_R = l1.get_data('V(n004)')
-V_C = l1.get_data('V(N001,N002)')
-V_L = l1.get_data('V(N002,N003)')
-V_in = l1.get_data('V(n005)')
+V_out = l1.get_data('V(N004)')
+V_in = l1.get_data('V(n006)')
 
-H = V_L/V_in
+H = V_out/V_in
 
 modulo = 20*np.log10(np.abs(H))
 fase = np.angle(H, deg=True)
 
-lcon = lts.Ltspice(ltspicePathCon)
-lcon.parse()
-frecuenciaCon = lcon.get_frequency()
-V_R1 = lcon.get_data('V(n002)')
-V_inc = lcon.get_data('V(n003)')
-modulocon = 20*np.log10(np.abs(V_R1/V_inc))
-fasecon = np.angle(V_R1/V_inc, deg=True)
-
-lsin = lts.Ltspice(ltspicePathSin)
-lsin.parse()
-frecuenciaSin = lsin.get_frequency()
-V_R2 = lsin.get_data('V(n002)')
-V_ins = lsin.get_data('V(n003)')
-modulosin = 20*np.log10(np.abs(V_R2/V_ins))
-fasesin = np.angle(V_R2/V_ins, deg=True)
-
 
 #CSV FILE
-filePathFase = "C:/Users/mgvir/Downloads/TP3Fisica.csv"
-filePathMag = "C:/Users/mgvir/Downloads/TP3Fisica.csv"
+filePathFase = "C:/Users/mgvir/Downloads/TONKI_CON_POTE_MAXIMO.csv"
+filePathMag = "C:/Users/mgvir/Downloads/TONKI_CON_POTE_MAXIMO.csv"
 
 dataFrameMag = pd.read_csv(filePathMag)
 dataFrameFase = pd.read_csv(filePathFase)
 
-X = dataFrameMag.iloc[:, 0].tolist()
-Ymag = dataFrameMag.iloc[:, 1].tolist()
-Yfase = dataFrameFase.iloc[:, 3].tolist()
+X = dataFrameMag.iloc[:, 0].values
+Ymag = dataFrameMag.iloc[:, 2].values
+Yfase = dataFrameFase.iloc[:, 3].values
 
 #Graph options
 
 bode = True
-bodeMode = "mag"
+bodeMode = "fase"
 
 fig, ax1 = plt.subplots()
 
 if bode:
-    octaves = [62150, 124300, 248600, 497200]
-    labels = ['62.15kHz', '124.3kHz ($f_0$)', '248.6kHz', '497.2kHz']
     ax1.set_xlabel("Frecuencia [Hz]")
     ax1.set_xscale("log")
 
     if bodeMode == "mag":
-        #ax1.plot(frecuency, modulo, label="Modulo simulado")
+        ax1.plot(frecuency, modulo, label="Modulo simulado")
         ax1.plot(X, Ymag, label="Modulo experimental")
-        ax1.set_ylabel("Ganancia en el capacitor [dB]")
+        ax1.set_ylabel("Ganancia [dB]")
+        ax1.axhline(-3, linestyle='--', color='gray', linewidth=1)
+        ax1.annotate(
+            "-3 dB",
+            xy=(ax1.get_xlim()[0], -3),
+            xytext=(-40, 0),
+            textcoords='offset points',
+            ha='right', va='center',
+            arrowprops=dict(arrowstyle='->', color='gray')
+        )
+
+        # 2) Busco cruces de Ymag con -3 dB
+        #    Signos de (Ymag + 3) cambian al cruzar -3.
+        signs = np.sign(Ymag + 3)
+        zero_crossings = np.where(np.diff(signs) != 0)[0]
+
+        for idx in zero_crossings:
+            # puntos alrededor del cruce
+            x1, y1 = X[idx],     Ymag[idx]
+            x2, y2 = X[idx + 1], Ymag[idx + 1]
+            # interp. lineal para y = -3
+            if (y2 - y1) != 0:
+                x_cut = x1 + ( -3 - y1 ) * (x2 - x1) / (y2 - y1)
+            else:
+                x_cut = x1
+            # 3) Marcador y línea vertical
+            ax1.plot(x_cut, -3, marker='o', color='red', markersize=6,
+                     label="-3 dB" if idx == zero_crossings[0] else None)
+            ax1.axvline(x_cut, linestyle='--', color='red', linewidth=1)
+            ax1.annotate(
+                f"{x_cut:.2f} Hz",
+                xy=(x_cut, ax1.get_ylim()[0]),
+                xytext=(0, -30),
+                textcoords='offset points',
+                ha='center', va='top',
+                arrowprops=dict(arrowstyle='->', color='red')
+            )
+
 
         
     else:
@@ -76,8 +91,5 @@ if bode:
     
     ax1.grid(True)
     ax1.legend()
-    #ax1.set_xlim(50000, 494400)
-    #ax1.minorticks_off()
-    #ax1.set_xticks(octaves, labels)
 
 plt.show()
